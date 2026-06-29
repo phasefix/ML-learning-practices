@@ -1,4 +1,4 @@
-# Simple ML Model 1
+# 1 Simple ML Model
 
 This project is based on the Kaggle Learn tutorial:
 [Random Forests Tutorial](https://www.kaggle.com/code/dansbecker/random-forests/tutorial)
@@ -43,5 +43,76 @@ The main purpose is to understand the basic machine learning workflow:
 5. Make predictions
 6. Evaluate model performance
 
+# 2 Pandas Basic Practice
+
+This coursework is based on the Kaggle Learn Pandas exercises.
+
+The goal of this project is to practice basic data manipulation using `pandas`.
+
+## What I Learned
+
+* How to create a `DataFrame`
+* How to create a `Series`
+* How to read a CSV file using `pd.read_csv()`
+* How to use `index_col` when loading a CSV file
+* How to select columns and rows using `loc` and `iloc`
+* How to filter data using conditions
+* How to calculate summary statistics such as median and mean
+* How to count unique values using `value_counts()`
+* How to create new variables from existing columns
+* How to use `map()` and lambda functions
+* How to find the row with the highest value using `idxmax()`
+
+## Tools Used
+
+* Python
+* pandas
+* Kaggle Notebook
+
+## File
+
+`Pandas_Basic_Practice.py`
+
+This file contains practice code for loading, selecting, filtering, and summarizing data with pandas.
+
+## Main Topics Practiced
+
+### Creating Data
+
+Created simple `DataFrame` and `Series` objects manually.
+
+### Reading Data
+
+Loaded a wine reviews CSV file using:
+
+```python
+pd.read_csv()
+```
+
+### Selecting Data
+
+Practiced selecting rows and columns with:
+
+```python
+loc
+iloc
+```
+
+### Filtering Data
+
+Filtered wine reviews by country, points, and index values.
+
+### Summary Statistics
+
+Calculated values such as median points, average price, and value counts by country.
+
+### Data Transformation
+
+Created new variables such as centered price, bargain wine, descriptor counts, and star ratings.
+
+## Notes
+
+This is a beginner pandas coursework project.
+The purpose is to understand how pandas is used to manage, select, filter, and analyze tabular data.
 
 
