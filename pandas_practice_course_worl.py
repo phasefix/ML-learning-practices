@@ -1,4 +1,3 @@
-```python
 import pandas as pd
 
 # Create a DataFrame with specific values
@@ -106,5 +105,20 @@ star_ratings = reviews.points.map(
     lambda x: 3 if x >= 95 else 2 if x >= 85 else 1
 )
 
-print("Coursework completed successfully.")
-```
+# Group reviews by 'taster_twitter_handle' and count the number of non-missing point scores for each taster
+reviews_written = reviews.groupby('taster_twitter_handle')['points'].count()
+# Group by price and find the highest points for each price
+best_rating_per_price_0 = reviews.groupby('price')['points'].max()
+# Group by points and find the lowest price for each points score
+best_rating_per_price_1 = reviews.groupby('points')['price'].min() 
+# sort_values gives the DataFrame
+best_rating_per_price = reviews.sort_values(
+    by=['price', 'points'],
+    ascending=[True, False]
+)
+
+# based the categry of variety, its min and max price values. 
+price_extremes = reviews.groupby(['variety']).price.agg([min,max])
+
+# multiindex
+country_variety_counts = reviews.groupby(['country', 'variety']).points.count().sort_values(ascending=False)
