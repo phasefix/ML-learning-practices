@@ -122,3 +122,26 @@ price_extremes = reviews.groupby(['variety']).price.agg([min,max])
 
 # multiindex
 country_variety_counts = reviews.groupby(['country', 'variety']).points.count().sort_values(ascending=False)
+
+# rename the columns
+renamed = reviews.rename(columns={
+    'region_1': 'region',
+    'region_2': 'locale'
+})
+
+# set index name
+reindexed = reviews.rename_axis("wines", axis="rows")
+
+# combine 2 DataFrame 
+gaming_products = pd.read_csv("../input/things-on-reddit/top-things/top-things/reddits/g/gaming.csv")
+gaming_products['subreddit'] = "r/gaming"
+movie_products = pd.read_csv("../input/things-on-reddit/top-things/top-things/reddits/m/movies.csv")
+movie_products['subreddit'] = "r/movies"
+combined_products = pd.concat([gaming_products, movie_products])
+
+# Combine two tables using MeetID as the matching key
+powerlifting_meets = pd.read_csv("../input/powerlifting-database/meets.csv")
+powerlifting_competitors = pd.read_csv("../input/powerlifting-database/openpowerlifting.csv")
+left = powerlifting_meets.set_index(['MeetID'])
+right = powerlifting_competitors.set_index(['MeetID'])
+powerlifting_combined = left.join(right)
