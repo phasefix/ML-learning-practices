@@ -22,21 +22,24 @@ TARGET = "SalePrice"
 RANDOM_STATE = 0
 
 
-def score_dataset(X_train, X_valid, y_train, y_valid) -> float:
-    """Train a random forest and return its validation MAE."""
+def score_dataset(X_train, X_valid, y_train, y_valid):
+    """Train a model and return the validation MAE."""
+
     model = RandomForestRegressor(
         n_estimators=100,
         random_state=RANDOM_STATE,
         n_jobs=-1,
     )
+
     model.fit(X_train, y_train)
     predictions = model.predict(X_valid)
+
     return mean_absolute_error(y_valid, predictions)
 
 
-def main() -> None:
+def main():
     # -----------------------------------------------------------------------
-    # Load and prepare the data
+    # 1. Load data
     # -----------------------------------------------------------------------
 
     train_data = pd.read_csv(TRAIN_PATH, index_col="Id")
@@ -45,17 +48,20 @@ def main() -> None:
     # Remove rows where the target is missing.
     train_data = train_data.dropna(subset=[TARGET])
 
-    # Separate the target from the predictors.
+    # Separate target from predictors.
     y = train_data[TARGET]
     X_full = train_data.drop(columns=[TARGET])
 
-    # Keep only numerical predictors.
+    # Keep only numerical columns.
     X = X_full.select_dtypes(exclude="object").copy()
 
-    # Use exactly the same predictor columns and order in the test data.
+    # Ensure that test data uses exactly the same columns.
     X_test = test_data[X.columns].copy()
 
-    # Split the training data into training and validation sets.
+    # -----------------------------------------------------------------------
+    # 2. Split training and validation data
+    # -----------------------------------------------------------------------
+
     X_train, X_valid, y_train, y_valid = train_test_split(
         X,
         y,
@@ -64,11 +70,13 @@ def main() -> None:
         random_state=RANDOM_STATE,
     )
 
-    # -----------------------------------------------------------------------
-    # Inspect missing values
-    # -----------------------------------------------------------------------
+    print("Training shape:", X_train.shape)
+    print("Validation shape:", X_valid.shape)
+    print("Test shape:", X_test.shape)
 
-    print(f"Training shape: {X_train.shape}")
+    # -----------------------------------------------------------------------
+    # 3. Inspect missing values
+    # -----------------------------------------------------------------------
 
     missing_counts = X_train.isna().sum()
     missing_counts = missing_counts[missing_counts > 0].sort_values(
@@ -76,10 +84,14 @@ def main() -> None:
     )
 
     print("\nMissing values by column:")
-    print(missing_counts if not missing_counts.empty else "No missing values.")
+    print(
+        missing_counts
+        if not missing_counts.empty
+        else "No missing values."
+    )
 
     # -----------------------------------------------------------------------
-    # Approach 1: Drop columns containing missing values
+    # 4. Approach 1: Drop columns with missing values
     # -----------------------------------------------------------------------
 
     columns_with_missing = X_train.columns[X_train.isna().any()]
@@ -94,16 +106,25 @@ def main() -> None:
         y_valid,
     )
 
-    print(f"\nMAE — drop missing-value columns: {drop_mae:,.2f}")
+    print(f"\nMAE — drop columns:              {drop_mae:,.2f}")
 
     # -----------------------------------------------------------------------
-    # Approach 2: Impute missing values with each column's median
+    # 5. Approach 2: Median imputation
     # -----------------------------------------------------------------------
 
     median_imputer = SimpleImputer(strategy="median")
 
-    imputed_X_train = median_imputer.fit_transform(X_train)
-    imputed_X_valid = median_imputer.transform(X_valid)
+    imputed_X_train = pd.DataFrame(
+        median_imputer.fit_transform(X_train),
+        columns=X_train.columns,
+        index=X_train.index,
+    )
+
+    imputed_X_valid = pd.DataFrame(
+        median_imputer.transform(X_valid),
+        columns=X_valid.columns,
+        index=X_valid.index,
+    )
 
     imputation_mae = score_dataset(
         imputed_X_train,
@@ -112,10 +133,10 @@ def main() -> None:
         y_valid,
     )
 
-    print(f"MAE — median imputation:          {imputation_mae:,.2f}")
+    print(f"MAE — median imputation:         {imputation_mae:,.2f}")
 
     # -----------------------------------------------------------------------
-    # Approach 3: Impute and add missing-value indicator columns
+    # 6. Approach 3: Imputation with missing indicators
     # -----------------------------------------------------------------------
 
     indicator_imputer = SimpleImputer(
@@ -133,18 +154,73 @@ def main() -> None:
         y_valid,
     )
 
-    print(f"MAE — imputation + indicators:    {indicator_mae:,.2f}")
+    print(f"MAE — imputation + indicators:   {indicator_mae:,.2f}")
 
     # -----------------------------------------------------------------------
-    # Prepare the full training and test sets using the chosen method
+    # 7. Preprocess full training data and test data
     # -----------------------------------------------------------------------
-    # Example using median imputation:
+
     final_imputer = SimpleImputer(strategy="median")
-    final_X = final_imputer.fit_transform(X)
-    final_X_test = final_imputer.transform(X_test)
 
-    print(f"\nPrepared training shape: {final_X.shape}")
-    print(f"Prepared test shape:     {final_X_test.shape}")
+    # Learn median values from the full training data.
+    final_X = pd.DataFrame(
+        final_imputer.fit_transform(X),
+        columns=X.columns,
+        index=X.index,
+    )
+
+    # Apply the same median values to the test data.
+    final_X_test = pd.DataFrame(
+        final_imputer.transform(X_test),
+        columns=X_test.columns,
+        index=X_test.index,
+    )
+
+    # Check preprocessing.
+    assert final_X_test.isna().sum().sum() == 0
+    assert len(final_X_test) == len(X_test)
+
+    print("\nMissing values in final_X_test:")
+    print(final_X_test.isna().sum().sum())
+
+    print("Final training shape:", final_X.shape)
+    print("Final test shape:", final_X_test.shape)
+
+    # -----------------------------------------------------------------------
+    # 8. Train final model using all training data
+    # -----------------------------------------------------------------------
+
+    model = RandomForestRegressor(
+        n_estimators=100,
+        random_state=RANDOM_STATE,
+        n_jobs=-1,
+    )
+
+    model.fit(final_X, y)
+
+    # -----------------------------------------------------------------------
+    # 9. Generate test predictions
+    # -----------------------------------------------------------------------
+
+    preds_test = model.predict(final_X_test)
+
+    print("Number of predictions:", len(preds_test))
+
+    # -----------------------------------------------------------------------
+    # 10. Create submission file
+    # -----------------------------------------------------------------------
+
+    submission = pd.DataFrame(
+        {
+            "Id": X_test.index,
+            "SalePrice": preds_test,
+        }
+    )
+
+    submission.to_csv("submission.csv", index=False)
+
+    print("\nCreated submission.csv")
+    print(submission.head())
 
 
 if __name__ == "__main__":
